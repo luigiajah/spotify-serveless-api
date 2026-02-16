@@ -15,12 +15,17 @@ interface TokenResponse {
 
 interface SpotifyResponse {
   is_playing: boolean;
+  progress_ms?: number;
   item?: {
     name: string;
+    duration_ms: number;
     artists: Array<{ name: string }>;
     album: {
       name: string;
       images: Array<{ url: string }>;
+    };
+    external_urls?: {
+      spotify?: string;
     };
   };
 }
@@ -90,7 +95,10 @@ export default async function handler(request: Request) {
         title: data.item?.name || '',
         artist: data.item?.artists[0]?.name || '',
         album: data.item?.album?.name || '',
-        albumImageUrl: data.item?.album?.images[0]?.url || ''
+        albumImageUrl: data.item?.album?.images[0]?.url || '',
+        progressMs: data.progress_ms || 0,
+        durationMs: data.item?.duration_ms || 0,
+        songUrl: data.item?.external_urls?.spotify || ''
       }), {
         headers: {
           'Content-Type': 'application/json',
