@@ -1,26 +1,40 @@
 // /api/now-playing.ts
 export const config = {
-    runtime: 'edge'
-  };
-  
-  interface TokenResponse {
-    access_token: string;
-  }
-  
-  interface SpotifyResponse {
-    is_playing: boolean;
-    item?: {
+  runtime: 'edge'
+};
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+interface TokenResponse {
+  access_token: string;
+}
+
+interface SpotifyResponse {
+  is_playing: boolean;
+  item?: {
+    name: string;
+    artists: Array<{ name: string }>;
+    album: {
       name: string;
-      artists: Array<{ name: string }>;
-      album: {
-        name: string;
-        images: Array<{ url: string }>;
-      };
+      images: Array<{ url: string }>;
     };
+  };
+}
+
+export default async function handler(request: Request) {
+  // Handle CORS preflight request
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
-  
-  export default async function handler(request: Request) {
-    try {
+
+  try {
       // Validate environment variables
       if (!process.env.SPOTIFY_REFRESH_TOKEN || 
           !process.env.SPOTIFY_CLIENT_ID || 
@@ -60,27 +74,27 @@ export const config = {
         return new Response(JSON.stringify({ isPlaying: false }), {
           headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+            ...corsHeaders
           }
         });
       }
-  
+
       if (!response.ok) {
         throw new Error(`Spotify API request failed: ${response.status}`);
       }
-  
+
       const data = await response.json() as SpotifyResponse;
-  
+
       return new Response(JSON.stringify({
         isPlaying: data.is_playing,
         title: data.item?.name || '',
         artist: data.item?.artists[0]?.name || '',
         album: data.item?.album?.name || '',
-        albumArt: data.item?.album?.images[0]?.url || ''
+        albumImageUrl: data.item?.album?.images[0]?.url || ''
       }), {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          ...corsHeaders
         }
       });
     } catch (error) {
@@ -91,7 +105,7 @@ export const config = {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          ...corsHeaders
         }
       });
     }
